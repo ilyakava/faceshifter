@@ -1,3 +1,16 @@
+"""
+Example Usage:
+
+python preprocess.py --root /DATA --output_dir /RESULT 
+
+Alternate Example with txt file input:
+
+find . -type f | head | sed 's/^\./\/DATA/' > ./filelist.txt
+
+python preprocess.py --root /DATA --output_dir /RESULT --inputs_list filelist.txt
+"""
+
+
 import os
 import PIL
 import dlib
@@ -7,43 +20,34 @@ import numpy as np
 import scipy.ndimage
 from PIL import Image
 from tqdm import tqdm
+import multiprocessing as mp
+from multiprocessing import Value
 
 import torch
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--root", type=str, required=True)
-parser.add_argument("--output_dir", type=str, required=True)
-args = parser.parse_args()
+def _align_img_wrapper(kwargs):
+    try:
+        return align_img(**kwargs)
+    except Exception as e:
+        print('Failed for arguments {} with exception {}'.format(kwargs, str(e)))
+        return 1
 
-output_size = 256
-transform_size=4096
-enable_padding=True
-detector = dlib.get_frontal_face_detector()
-sp = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
 
-torch.backends.cudnn.benchmark = False
+def align_img(img_file, output_img_name, output_dir, enable_padding, transform_size, output_size):
+    global pbar, counter, detector, shape_predictor
 
-os.makedirs(args.output_dir, exist_ok=True)
-img_files = [
-            os.path.join(path, filename)
-            for path, dirs, files in os.walk(args.root)
-            for filename in files
-            if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".jpeg")
-        ]
-img_files.sort()
+    if counter:
+        with counter.get_lock():
+            counter.value += 1
 
-cnt = 0
-for img_file in tqdm(img_files):
-    output_img = os.path.join(args.output_dir, f"{cnt:08}.png")
-    if os.path.isfile(output_img):
-        cnt += 1
-        continue
+    output_img = os.path.join(output_dir, output_img_name)
+    
     img = dlib.load_rgb_image(img_file)
     dets = detector(img, 1)
-    if len(dets) < 0:
-        print("no face landmark detected")
+    if not len(dets):
+        return 1
     else:
-        shape = sp(img, dets[0])
+        shape = shape_predictor(img, dets[0])
         points = np.empty([68, 2], dtype=int)
         for b in range(68):
             points[b, 0] = shape.part(b).x
@@ -104,6 +108,7 @@ for img_file in tqdm(img_files):
     # Pad.
     pad = (int(np.floor(min(quad[:,0]))), int(np.floor(min(quad[:,1]))), int(np.ceil(max(quad[:,0]))), int(np.ceil(max(quad[:,1]))))
     pad = (max(-pad[0] + border, 0), max(-pad[1] + border, 0), max(pad[2] - img.size[0] + border, 0), max(pad[3] - img.size[1] + border, 0))
+    
     if enable_padding and max(pad) > border - 4:
         pad = np.maximum(pad, int(np.rint(qsize * 0.3)))
         img = np.pad(np.float32(img), ((pad[1], pad[3]), (pad[0], pad[2]), (0, 0)), 'reflect')
@@ -123,4 +128,106 @@ for img_file in tqdm(img_files):
 
     # Save aligned image.
     img.save(output_img)
-    cnt += 1
+
+    if pbar:
+        with pbar.get_lock():
+            if pbar.n < counter.value:
+                pbar.n = counter.value
+                pbar.refresh()
+
+    return 0
+
+def main(args):
+    global pbar, counter, detector, shape_predictor
+    pbar = None
+    counter = Value('i', 0)
+
+    detector = dlib.get_frontal_face_detector()
+    shape_predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+
+    torch.backends.cudnn.benchmark = False
+
+    os.makedirs(args.output_dir, exist_ok=True)
+
+    if not args.inputs_list:
+        img_files = [
+                    os.path.join(path, filename)
+                    for path, dirs, files in os.walk(args.root)
+                    for filename in files
+                    if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".jpeg")
+                ]
+    else:
+        img_files = []
+        with open(args.inputs_list, 'r') as f:
+            lines = [l.strip() for l in f.readlines()]
+
+            img_files = [
+                    filename
+                    for filename in lines
+                    if (filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".jpeg")) and os.path.exists(filename) and filename.startswith(args.root)
+                ]
+            assert len(lines) == len(img_files), "Input file list contained invalid images."
+
+    assert len(img_files), "There are no images to process."
+    img_files.sort()
+    
+    args_list = []
+    for cnt, img_file in enumerate(img_files):
+        if args.rename_outputs:
+            output_img_name = f"{cnt:08}.png"
+        else:
+            # delete the root filepath from the individual filename
+            img_file_no_root = img_file[len(args.root):]
+            filename_parts = [p for p in img_file_no_root.split('/') if p]
+            if args.outputs_prefix:
+                filename_parts.insert(0, args.outputs_prefix)
+            new_name = '-'.join(filename_parts)
+            new_name_no_ext, _ = os.path.splitext(new_name)
+            output_img_name = new_name_no_ext + ".png"
+
+
+        args_list.append({
+            'img_file': img_file,
+            'output_img_name': output_img_name,
+            'output_dir': args.output_dir,
+            'enable_padding': not args.no_padding,
+            'transform_size': args.transform_size,
+            'output_size': args.output_size
+        })
+
+    print("{} images ready to process on {} workers".format(len(args_list), args.num_threads))
+    pbar = tqdm(total=len(args_list), desc='Aligning')
+
+    if args.num_threads > 1:
+        with mp.Pool(processes=args.num_threads) as p:
+            res = p.map(_align_img_wrapper, args_list)
+    else:
+        res = []
+        for cnt, work_item in enumerate(args_list):
+            res.append(_align_img_wrapper(work_item))
+            pbar.n = cnt + 1
+            pbar.refresh()
+
+    pbar.n = len(args_list)
+    pbar.close()
+
+    print("Finished with {} failures for {} inputs.".format(sum(res), len(res)))
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument("--root", type=str, required=True)
+    parser.add_argument("--output_dir", type=str, required=True)
+
+    parser.add_argument("--inputs_list", type=str, default='')
+
+    parser.add_argument("--output_size", type=int, default=256)
+    parser.add_argument("--transform_size", type=int, default=4096)
+    parser.add_argument('--no_padding', action='store_true', help='...')
+    parser.add_argument('--rename_outputs', action='store_true', help='...')
+    parser.add_argument("--num_threads", type=int, default=1)
+    parser.add_argument("--outputs_prefix", type=str, default='')
+
+
+    args = parser.parse_args()
+    main(args)
