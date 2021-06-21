@@ -174,7 +174,7 @@ def main(args):
     args_list = []
     for cnt, img_file in enumerate(img_files):
         if args.rename_outputs:
-            output_img_name = f"{cnt:08}.png"
+            output_img_name = f"{cnt:08}.jpeg"
         else:
             # delete the root filepath from the individual filename
             img_file_no_root = img_file[len(args.root):]
@@ -183,7 +183,7 @@ def main(args):
                 filename_parts.insert(0, args.outputs_prefix)
             new_name = '-'.join(filename_parts)
             new_name_no_ext, _ = os.path.splitext(new_name)
-            output_img_name = new_name_no_ext + ".png"
+            output_img_name = new_name_no_ext + ".jpeg"
 
 
         args_list.append({
