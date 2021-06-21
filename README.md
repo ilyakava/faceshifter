@@ -46,6 +46,8 @@ docker run -itd --ipc host --gpus all -v /PATH_TO_THIS_FOLDER:/workspace -v /PAT
 docker attach FS
 ```
 
+Also works in `nvcr.io/nvidia/pytorch:20.10-py3` on Ampere.
+
 ### Pre-trained Arcface
 During the training process, pre-trained [Arcface](https://openaccess.thecvf.com/content_CVPR_2019/html/Deng_ArcFace_Additive_Angular_Margin_Loss_for_Deep_Face_Recognition_CVPR_2019_paper.html)
 is required. We provide our pre-trained Arcface model; you can download at [this](https://drive.google.com/file/d/1TAb6WNfusbL2Iv3tfRCpMXimZE9tnSUn/view?usp=sharing) link

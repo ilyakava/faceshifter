@@ -120,9 +120,9 @@ class AEINet(pl.LightningModule):
         return [opt_g, opt_d], []
 
     def train_dataloader(self):
+        # transforms.Resize((256, 256)),
+        # transforms.CenterCrop((256, 256)),
         transform = transforms.Compose([
-            transforms.Resize((256, 256)),
-            transforms.CenterCrop((256, 256)),
             transforms.ToTensor(),
             ])
         dataset = AEI_Dataset(self.hp.data.dataset_dir, transform=transform)

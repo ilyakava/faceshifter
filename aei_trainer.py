@@ -1,3 +1,9 @@
+"""Trains the face-shifter network.
+
+Example usage:
+python aei_trainer.py -c config/train.yaml -g 0,1 -n my_runname
+"""
+
 import os
 from omegaconf import OmegaConf
 from argparse import ArgumentParser

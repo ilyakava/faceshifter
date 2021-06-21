@@ -15,12 +15,12 @@ class AEI_Dataset(Dataset):
     def __init__(self, root, transform=None):
         super(AEI_Dataset, self).__init__()
         self.root = root
+        print('Loading dataset from {}...'.format(root))
         self.files = [
-            os.path.join(path, filename)
-            for path, dirs, files in os.walk(root)
-            for filename in files
-            if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".jpeg")
+            os.path.join(root, filename)
+            for filename in os.listdir(root)
         ]
+        print('Done loading dataset from {}'.format(root))
         self.transform = transform
 
 
