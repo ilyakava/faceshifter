@@ -46,7 +46,12 @@ docker run -itd --ipc host --gpus all -v /PATH_TO_THIS_FOLDER:/workspace -v /PAT
 docker attach FS
 ```
 
-Also works in `nvcr.io/nvidia/pytorch:20.10-py3` on Ampere.
+Also works in `nvcr.io/nvidia/pytorch:20.10-py3` on Ampere:
+
+```
+docker run --gpus all --shm-size 960G --rm -it -v /dev/shm/faceshifter:/workspace -v /dev/shm/:/SHARED nvcr.io/nvidia/pytorch:20.10-py3
+pip install -r requirements.txt
+```
 
 ### Pre-trained Arcface
 During the training process, pre-trained [Arcface](https://openaccess.thecvf.com/content_CVPR_2019/html/Deng_ArcFace_Additive_Angular_Margin_Loss_for_Deep_Face_Recognition_CVPR_2019_paper.html)

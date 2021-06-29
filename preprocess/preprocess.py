@@ -1,7 +1,11 @@
 """
 Example Usage:
 
-python preprocess.py --root /DATA --output_dir /RESULT 
+python preprocess.py --root /DATA --output_dir /RESULT --num_threads 96 --outputs_prefix vggf2
+
+after launching docker with:
+
+docker run -it -v ~/vggface2/train/:/DATA -v ~/vggface2/train-preprocessed:/RESULT -v ~/faceshifter/preprocess:/workspace dlib:0.0
 
 Alternate Example with txt file input:
 
