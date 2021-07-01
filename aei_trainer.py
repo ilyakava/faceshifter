@@ -22,15 +22,16 @@ def main(args):
     os.makedirs(save_path, exist_ok=True)
 
     checkpoint_callback = ModelCheckpoint(
-        filepath=os.path.join(hp.log.chkpt_dir, args.name),
+        dirpath=hp.log.chkpt_dir,
+        filename='{epoch}_{val_loss:.4f}' + args.name,
         monitor='val_loss',
         verbose=True,
         save_top_k=args.save_top_k,  # save all
     )
 
+    # should on_train_end be set?
     trainer = Trainer(
         logger=pl_loggers.TensorBoardLogger(hp.log.log_dir),
-        early_stop_callback=None,
         checkpoint_callback=checkpoint_callback,
         weights_save_path=save_path,
         gpus=-1 if args.gpus is None else args.gpus,
@@ -60,8 +61,8 @@ if __name__ == '__main__':
                         help="save top k checkpoints, default(-1): save all")
     parser.add_argument('-f', '--fast_dev_run', type=bool, default=False,
                         help="fast run for debugging purpose")
-    parser.add_argument('--val_interval', type=float, default=0.01,
-                        help="run val loop every * training epochs")
+    parser.add_argument('--val_interval', type=float, default=1.0,
+                        help="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#val-check-interval")
 
     args = parser.parse_args()
 

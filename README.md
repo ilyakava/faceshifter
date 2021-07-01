@@ -37,19 +37,14 @@ They **must** be edited to match your training requirements (dataset, metadata, 
 - [`config/train.yaml`](./config/train.yaml): Configs for training AEI-Net.
   - Fill in the blanks of: `dataset_dir`, `valset_dir`
   - You may want to change: `batch_size` for GPUs other than 32GB V100, or `chkpt_dir` to save checkpoints in other disk.
-  
+
+
 ### Using Docker
-We provide a Dockerfile for easier training environment setup.
-```bash
-docker build -t faceshifter:0.0 .
-docker run -itd --ipc host --gpus all -v /PATH_TO_THIS_FOLDER:/workspace -v /PATH_TO_DATASET:/DATA --name FS --tag faceshifter:0.0
-docker attach FS
-```
 
-Also works in `nvcr.io/nvidia/pytorch:20.10-py3` on Ampere:
+Works in `nvcr.io/nvidia/pytorch:21.06-py3` on Ampere:
 
 ```
-docker run --gpus all --shm-size 960G --rm -it -v /dev/shm/faceshifter:/workspace -v /dev/shm/:/SHARED nvcr.io/nvidia/pytorch:20.10-py3
+docker run --gpus all --shm-size 960G --rm -it -v /dev/shm/faceshifter:/workspace -v /dev/shm/:/SHARED nvcr.io/nvidia/pytorch:21.06-py3
 pip install -r requirements.txt
 ```
 
