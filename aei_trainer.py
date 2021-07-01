@@ -1,7 +1,7 @@
 """Trains the face-shifter network.
 
 Example usage:
-python aei_trainer.py -c config/p4d.24xlarge.yaml -g 0,1,2,3,4,5,6,7 -n vggface2only
+python aei_trainer.py -c config/p4d.24xlarge.yaml -g 0,1,2,3,4,5,6,7 -n vggface2only --checkpoint_path /SHARED/chkpt/vggface2only/epoch\=1.ckpt
 """
 
 import os

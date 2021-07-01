@@ -9,7 +9,7 @@ arcface:
 
 data:
   dataset_dir: '/SHARED/vggface2/train-preprocessed'
-  valset_dir: '/SHARED/vggface2/test-mini'
+  valset_dir: '/SHARED/vggface2/test-tiny'
 
 model:
   learning_rate_E_G: 4e-4
@@ -20,5 +20,5 @@ model:
 
   batch_size: 16
 
-  num_workers: 96
+  num_workers: 1
   grad_clip: 0.0
