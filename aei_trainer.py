@@ -1,7 +1,10 @@
 """Trains the face-shifter network.
 
-Example usage:
-python aei_trainer.py -c config/p4d.24xlarge.yaml -g 0,1,2,3,4,5,6,7 -n vggface2only --checkpoint_path /SHARED/epoch1.ckpt --val_interval 0.05
+Example train usage:
+python aei_trainer.py -c config/p4d.24xlarge.yaml -g 0,1,2,3,4,5,6,7 -n vggface2only --checkpoint_path /SHARED/epoch1.ckpt
+
+Example eval usage:
+python aei_trainer.py -c config/p4d.24xlarge.yaml -g 0,1,2,3,4,5,6,7 -n vggface2only --eval_only --checkpoint_path /SHARED/epoch1.ckpt
 """
 
 import os
@@ -52,7 +55,10 @@ def main(args):
         progress_bar_refresh_rate=1,
         max_epochs=100,
     )
-    trainer.fit(model)
+    if args.eval_only:
+        trainer.validate(model)
+    else:
+        trainer.fit(model)
 
 
 if __name__ == '__main__':
@@ -71,6 +77,8 @@ if __name__ == '__main__':
                         help="fast run for debugging purpose")
     parser.add_argument('--val_interval', type=float, default=0.1,
                         help="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#val-check-interval")
+    parser.add_argument('--eval_only', action='store_true',
+                        help="...")
 
     args = parser.parse_args()
 
