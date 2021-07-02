@@ -1,7 +1,7 @@
 """Trains the face-shifter network.
 
 Example usage:
-python aei_trainer.py -c config/p4d.24xlarge.yaml -g 0,1,2,3,4,5,6,7 -n vggface2only --checkpoint_path /SHARED/chkpt/vggface2only/epoch\=1.ckpt
+python aei_trainer.py -c config/p4d.24xlarge.yaml -g 0,1,2,3,4,5,6,7 -n vggface2only --checkpoint_path /SHARED/epoch1.ckpt --val_interval 0.05
 """
 
 import os
@@ -21,18 +21,26 @@ def main(args):
     save_path = os.path.join(hp.log.chkpt_dir, args.name)
     os.makedirs(save_path, exist_ok=True)
 
-    checkpoint_callback = ModelCheckpoint(
+    val_saver = ModelCheckpoint(
         dirpath=hp.log.chkpt_dir,
         filename='{epoch}_{val_loss:.4f}' + args.name,
         monitor='val_loss',
         verbose=True,
-        save_top_k=args.save_top_k,  # save all
+        save_top_k=args.save_top_k,
+    )
+    
+    periodic_saver = ModelCheckpoint(
+        dirpath=hp.log.chkpt_dir,
+        filename='{epoch}_{step}' + args.name,
+        every_n_train_steps=10000,
+        save_top_k=-1, # prevents overwriting
+        verbose=True,
     )
 
     # should on_train_end be set?
     trainer = Trainer(
         logger=pl_loggers.TensorBoardLogger(hp.log.log_dir),
-        checkpoint_callback=checkpoint_callback,
+        callbacks=[val_saver, periodic_saver],
         weights_save_path=save_path,
         gpus=-1 if args.gpus is None else args.gpus,
         distributed_backend='ddp',
@@ -42,7 +50,7 @@ def main(args):
         fast_dev_run=args.fast_dev_run,
         val_check_interval=args.val_interval,
         progress_bar_refresh_rate=1,
-        max_epochs=10000,
+        max_epochs=100,
     )
     trainer.fit(model)
 
@@ -61,7 +69,7 @@ if __name__ == '__main__':
                         help="save top k checkpoints, default(-1): save all")
     parser.add_argument('-f', '--fast_dev_run', type=bool, default=False,
                         help="fast run for debugging purpose")
-    parser.add_argument('--val_interval', type=float, default=1.0,
+    parser.add_argument('--val_interval', type=float, default=0.1,
                         help="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#val-check-interval")
 
     args = parser.parse_args()

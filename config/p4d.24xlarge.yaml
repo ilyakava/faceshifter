@@ -8,8 +8,8 @@ arcface:
   vector_size: 256
 
 data:
-  dataset_dir: '/SHARED/vggface2/train-preprocessed'
-  valset_dir: '/SHARED/vggface2/test-tiny'
+  dataset_dir: '/SHARED/data/train-preprocessed'
+  valset_dir: '/SHARED/data/test-tiny'
 
 model:
   learning_rate_E_G: 4e-4

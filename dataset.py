@@ -76,17 +76,16 @@ class AEI_Val_Dataset(Dataset):
         else:
             same = torch.zeros(1)
 
-        f_img = Image.open(self.files[f_idx])
-        s_img = Image.open(self.files[s_idx])
-
-        f_img = f_img.convert('RGB')
-        s_img = s_img.convert('RGB')
-
-        if self.transfrom is not None:
-            f_img = self.transfrom(f_img)
-            s_img = self.transfrom(s_img)
-
-        return f_img, s_img, same
+        with Image.open(self.files[f_idx]) as f_img:
+            with Image.open(self.files[s_idx]) as s_img:
+                f_img = f_img.convert('RGB')
+                s_img = s_img.convert('RGB')
+        
+                if self.transfrom is not None:
+                    f_img = self.transfrom(f_img)
+                    s_img = self.transfrom(s_img)
+        
+                return f_img, s_img, same
 
     def __len__(self):
         return len(self.files) * len(self.files)
