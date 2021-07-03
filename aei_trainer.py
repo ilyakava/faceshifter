@@ -54,6 +54,7 @@ def main(args):
         val_check_interval=args.val_interval,
         progress_bar_refresh_rate=1,
         max_epochs=100,
+        accumulate_grad_batches=args.accumulate_grad_batches,
     )
     if args.eval_only:
         trainer.validate(model)
@@ -78,6 +79,8 @@ if __name__ == '__main__':
     parser.add_argument('--val_interval', type=float, default=0.1,
                         help="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#val-check-interval")
     parser.add_argument('--eval_only', action='store_true',
+                        help="...")
+    parser.add_argument('--accumulate_grad_batches', type=int, default=1,
                         help="...")
 
     args = parser.parse_args()
