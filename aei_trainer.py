@@ -55,6 +55,7 @@ def main(args):
         progress_bar_refresh_rate=1,
         max_epochs=100,
         accumulate_grad_batches=args.accumulate_grad_batches,
+        stochastic_weight_avg=args.stochastic_weight_avg,
     )
     if args.eval_only:
         trainer.validate(model)
@@ -81,6 +82,8 @@ if __name__ == '__main__':
     parser.add_argument('--eval_only', action='store_true',
                         help="...")
     parser.add_argument('--accumulate_grad_batches', type=int, default=1,
+                        help="...")
+    parser.add_argument('--stochastic_weight_avg', action='store_true',
                         help="...")
 
     args = parser.parse_args()
