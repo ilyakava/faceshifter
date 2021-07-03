@@ -1,4 +1,4 @@
-"""
+"""Visualize inference on a folder of images.
 
 Example usage:
 python aei_test.py -c config/p4d.24xlarge.yaml --checkpoint_path /SHARED/epoch1.ckpt --target_image_dir /SHARED/data/test-tiny/ --source_image_dir /SHARED/data/test-tiny/ --output_path /SHARED/eval/v0
@@ -6,7 +6,7 @@ python aei_test.py -c config/p4d.24xlarge.yaml --checkpoint_path /SHARED/epoch1.
 
 import argparse
 import numpy as np
-import cv2
+import imageio
 from tqdm import tqdm
 import os
 from PIL import Image
@@ -42,13 +42,14 @@ model.to(device)
 
 target_images = [(os.path.join(args.target_image_dir, fn), os.path.splitext(fn)[0]) for fn in os.listdir(args.target_image_dir)]
 source_images = [(os.path.join(args.source_image_dir, fn), os.path.splitext(fn)[0]) for fn in os.listdir(args.source_image_dir)]
+os.makedirs(args.output_path, exist_ok=True)
 
 pbar = tqdm(total=len(target_images) * len(source_images), desc='Testing')
 
 with torch.no_grad():
     for target_img_path, target_name in target_images:
         for source_img_path, source_name in source_images:
-            output_img_path = os.path.join(args.output_path, '{}x{}.jpeg'.format(source_name, target_name))
+            output_img_path = os.path.join(args.output_path, '{}_X_{}.jpeg'.format(source_name, target_name))
             with Image.open(target_img_path) as target_image:
                 with Image.open(source_img_path) as source_image:
                     target_img = transforms.ToTensor()(target_image).unsqueeze(0).to(device)
@@ -60,7 +61,7 @@ with torch.no_grad():
                     row = [source_image, target_image, output_image]
                     row = np.hstack([np.array(myimg) for myimg in [source_image, target_image, output_image]])
                     # output.save(args.output_path)
-                    cv2.imwrite(output_img_path, row.astype(np.uint8))
+                    imageio.imsave(output_img_path, row.astype(np.uint8))
                     
                     pbar.n += 1
                     pbar.refresh()
